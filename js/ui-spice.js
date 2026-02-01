@@ -12,56 +12,59 @@ class SpicePanel {
     this.controls = [];
     const { w, h } = area;
     const cx = w / 2;
-    const knobR = 22 * s;
-    const knobSmR = 17 * s;
-    const rowH = 64 * s;
+    const knobR = 26 * s;
+    const knobSmR = 21 * s;
+    const rowH = 58 * s;
+    const sp3 = Math.min(105 * s, (w - 20 * s) / 3.2);
+    const sp4 = Math.min(78 * s, (w - 20 * s) / 4.5);
+    const sp5 = Math.min(60 * s, (w - 20 * s) / 5.5);
 
-    let y = 50 * s;
+    let y = 46 * s;
 
     // Row 1: VCO1 - Freq, Shape, Level
-    this._knob('vco1.frequency', 'VCO1 FRQ', cx - 90 * s, y, knobR, 20, 2000, 'log');
-    this._switch('vco1.shape', 'SHAPE', cx, y, ['SQR', 'SAW'], 45 * s);
-    this._knob('vco1.level', 'VCO1 LVL', cx + 85 * s, y, knobSmR, 0, 1);
+    this._knob('vco1.frequency', 'VCO1 FRQ', cx - sp3, y, knobR, 20, 2000, 'log');
+    this._switch('vco1.shape', 'SHAPE', cx, y, ['SQR', 'SAW'], 50 * s);
+    this._knob('vco1.level', 'VCO1 LVL', cx + sp3, y, knobSmR, 0, 1);
 
     y += rowH;
     // Row 2: Sub 1A, Sub 1B (VCO1's subs)
-    this._stepped('sub.0.division', 'SUB 1A', cx - 100 * s, y, 16 * s, 1, 16);
-    this._knob('sub.0.level', 'S1A LVL', cx - 45 * s, y, knobSmR * 0.8, 0, 1);
-    this._stepped('sub.1.division', 'SUB 1B', cx + 30 * s, y, 16 * s, 1, 16);
-    this._knob('sub.1.level', 'S1B LVL', cx + 85 * s, y, knobSmR * 0.8, 0, 1);
+    this._stepped('sub.0.division', 'SUB 1A', cx - sp4 * 1.5, y, 18 * s, 1, 16);
+    this._knob('sub.0.level', 'S1A LVL', cx - sp4 * 0.5, y, knobSmR * 0.85, 0, 1);
+    this._stepped('sub.1.division', 'SUB 1B', cx + sp4 * 0.5, y, 18 * s, 1, 16);
+    this._knob('sub.1.level', 'S1B LVL', cx + sp4 * 1.5, y, knobSmR * 0.85, 0, 1);
 
     y += rowH;
     // Row 3: VCO2 - Freq, Shape, Level
-    this._knob('vco2.frequency', 'VCO2 FRQ', cx - 90 * s, y, knobR, 20, 2000, 'log');
-    this._switch('vco2.shape', 'SHAPE', cx, y, ['SQR', 'SAW'], 45 * s);
-    this._knob('vco2.level', 'VCO2 LVL', cx + 85 * s, y, knobSmR, 0, 1);
+    this._knob('vco2.frequency', 'VCO2 FRQ', cx - sp3, y, knobR, 20, 2000, 'log');
+    this._switch('vco2.shape', 'SHAPE', cx, y, ['SQR', 'SAW'], 50 * s);
+    this._knob('vco2.level', 'VCO2 LVL', cx + sp3, y, knobSmR, 0, 1);
 
     y += rowH;
     // Row 4: Sub 2A, Sub 2B (VCO2's subs)
-    this._stepped('sub.2.division', 'SUB 2A', cx - 100 * s, y, 16 * s, 1, 16);
-    this._knob('sub.2.level', 'S2A LVL', cx - 45 * s, y, knobSmR * 0.8, 0, 1);
-    this._stepped('sub.3.division', 'SUB 2B', cx + 30 * s, y, 16 * s, 1, 16);
-    this._knob('sub.3.level', 'S2B LVL', cx + 85 * s, y, knobSmR * 0.8, 0, 1);
+    this._stepped('sub.2.division', 'SUB 2A', cx - sp4 * 1.5, y, 18 * s, 1, 16);
+    this._knob('sub.2.level', 'S2A LVL', cx - sp4 * 0.5, y, knobSmR * 0.85, 0, 1);
+    this._stepped('sub.3.division', 'SUB 2B', cx + sp4 * 0.5, y, 18 * s, 1, 16);
+    this._knob('sub.3.level', 'S2B LVL', cx + sp4 * 1.5, y, knobSmR * 0.85, 0, 1);
 
     y += rowH;
     // Row 5: Filter + Filter EG
-    this._knob('vcf.cutoff', 'CUTOFF', cx - 100 * s, y, knobR, 20, 18000, 'log');
-    this._knob('vcf.resonance', 'RESO', cx - 30 * s, y, knobSmR, 0, 1);
-    this._knob('vcfEg.attack', 'F.ATK', cx + 30 * s, y, knobSmR * 0.8, 0.001, 2, 'log');
-    this._knob('vcfEg.decay', 'F.DEC', cx + 80 * s, y, knobSmR * 0.8, 0.01, 3, 'log');
-    this._knob('vcfEg.amount', 'F.AMT', cx + 125 * s, y, knobSmR * 0.8, 0, 1);
+    this._knob('vcf.cutoff', 'CUTOFF', cx - sp5 * 2, y, knobR, 20, 18000, 'log');
+    this._knob('vcf.resonance', 'RESO', cx - sp5, y, knobSmR, 0, 1);
+    this._knob('vcfEg.attack', 'F.ATK', cx, y, knobSmR * 0.85, 0.001, 2, 'log');
+    this._knob('vcfEg.decay', 'F.DEC', cx + sp5, y, knobSmR * 0.85, 0.01, 3, 'log');
+    this._knob('vcfEg.amount', 'F.AMT', cx + sp5 * 2, y, knobSmR * 0.85, 0, 1);
 
     y += rowH;
     // Row 6: VCA EG + Volume + Tempo
-    this._knob('vcaEg.attack', 'V.ATK', cx - 110 * s, y, knobSmR * 0.8, 0.001, 2, 'log');
-    this._knob('vcaEg.decay', 'V.DEC', cx - 55 * s, y, knobSmR * 0.8, 0.01, 3, 'log');
+    this._knob('vcaEg.attack', 'V.ATK', cx - sp5 * 2, y, knobSmR * 0.85, 0.001, 2, 'log');
+    this._knob('vcaEg.decay', 'V.DEC', cx - sp5, y, knobSmR * 0.85, 0.01, 3, 'log');
     this._knob('volume', 'VOLUME', cx, y, knobSmR, 0, 1);
-    this._knob('tempo', 'TEMPO', cx + 60 * s, y, knobSmR, 40, 300);
-    this._button('running', 'RUN', cx + 120 * s, y);
+    this._knob('tempo', 'TEMPO', cx + sp5, y, knobSmR, 40, 300);
+    this._button('running', 'RUN', cx + sp5 * 2, y);
 
-    y += rowH * 0.85;
+    y += rowH * 0.8;
     // Sequencer 1: 4 steps
-    const stepSize = Math.min(28 * s, (w - 40 * s) / 9);
+    const stepSize = Math.min(30 * s, (w - 40 * s) / 9);
     const seq1X = cx - stepSize * 3;
     for (let i = 0; i < 4; i++) {
       this.controls.push({
@@ -89,11 +92,12 @@ class SpicePanel {
       });
     }
 
-    y += stepSize + 10 * s;
+    y += stepSize + 8 * s;
     // Rhythm dividers: 4 stepped selectors
-    const rX = cx - stepSize * 2.5;
+    const rSpacing = Math.min(stepSize * 1.5, (w - 60 * s) / 4);
+    const rX = cx - rSpacing * 1.5;
     for (let i = 0; i < 4; i++) {
-      this._stepped(`rhythm.${i}.division`, `R${i + 1}`, rX + i * (stepSize * 1.5), y, 14 * s, 1, 16);
+      this._stepped(`rhythm.${i}.division`, `R${i + 1}`, rX + i * rSpacing, y, 16 * s, 1, 16);
     }
   }
 

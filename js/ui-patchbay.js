@@ -19,11 +19,11 @@ class PatchBayPanel {
   buildLayout(area, s) {
     this.patchPoints = [];
     const { w, h } = area;
-    const pad = 15 * s;
+    const pad = 12 * s;
 
     // Layout: 3 instrument sections, each with OUT row and IN row
     const sectionH = (h - pad * 2) / 3;
-    const patchR = 10 * s;
+    const patchR = 14 * s; // bigger for easier touch targets
 
     for (let instIdx = 0; instIdx < this.instruments.length; instIdx++) {
       const inst = this.instruments[instIdx];
@@ -37,7 +37,7 @@ class PatchBayPanel {
       const startX = pad + spacing;
 
       // Output row
-      const outY = sectionY + 40 * s;
+      const outY = sectionY + 38 * s;
       for (let i = 0; i < outputs.length; i++) {
         this.patchPoints.push({
           type: 'source',
@@ -52,7 +52,7 @@ class PatchBayPanel {
       }
 
       // Input row
-      const inY = sectionY + sectionH - 30 * s;
+      const inY = sectionY + sectionH - 28 * s;
       for (let i = 0; i < inputs.length; i++) {
         this.patchPoints.push({
           type: 'dest',
@@ -216,39 +216,51 @@ class PatchBayPanel {
   }
 
   onPointerDown(x, y, ui) {
-    // Find closest patch point
+    // Find closest patch point - use generous touch target
+    let closestPP = null;
+    let closestDist = Infinity;
     for (const pp of this.patchPoints) {
-      if (Math.hypot(x - pp.x, y - pp.y) < pp.r * 2) {
-        if (!this.activePatchStart) {
-          this.activePatchStart = pp;
-        } else if (this.activePatchStart.type !== pp.type) {
-          // Complete the cable
-          const source = this.activePatchStart.type === 'source' ? this.activePatchStart : pp;
-          const dest = this.activePatchStart.type === 'dest' ? this.activePatchStart : pp;
-
-          // Check if patch already exists - if so, remove it
-          const existing = this.master.crossPatches.find(
-            p => p.sourceInst === source.instrument && p.sourceId === source.id &&
-                 p.destInst === dest.instrument && p.destId === dest.id
-          );
-          if (existing) {
-            this.master.removeCrossPatch(source.instrument, source.id, dest.instrument, dest.id);
-            if (ui.network && ui.network.connected) {
-              ui.network.broadcastPatchChange('remove', source.instrument, source.id, dest.instrument, dest.id);
-            }
-          } else {
-            this.master.addCrossPatch(source.instrument, source.id, dest.instrument, dest.id);
-            if (ui.network && ui.network.connected) {
-              ui.network.broadcastPatchChange('add', source.instrument, source.id, dest.instrument, dest.id);
-            }
-          }
-          this.activePatchStart = null;
-        } else {
-          // Same type - restart
-          this.activePatchStart = pp;
-        }
-        return;
+      const dist = Math.hypot(x - pp.x, y - pp.y);
+      if (dist < pp.r * 2.5 && dist < closestDist) {
+        closestDist = dist;
+        closestPP = pp;
       }
+    }
+
+    if (closestPP) {
+      const pp = closestPP;
+      if (!this.activePatchStart) {
+        this.activePatchStart = pp;
+      } else if (this.activePatchStart === pp) {
+        // Tapped same point - deselect
+        this.activePatchStart = null;
+      } else if (this.activePatchStart.type !== pp.type) {
+        // Complete the cable (source→dest or dest→source)
+        const source = this.activePatchStart.type === 'source' ? this.activePatchStart : pp;
+        const dest = this.activePatchStart.type === 'dest' ? this.activePatchStart : pp;
+
+        // Check if patch already exists - if so, remove it
+        const existing = this.master.crossPatches.find(
+          p => p.sourceInst === source.instrument && p.sourceId === source.id &&
+               p.destInst === dest.instrument && p.destId === dest.id
+        );
+        if (existing) {
+          this.master.removeCrossPatch(source.instrument, source.id, dest.instrument, dest.id);
+          if (ui.network && ui.network.connected) {
+            ui.network.broadcastPatchChange('remove', source.instrument, source.id, dest.instrument, dest.id);
+          }
+        } else {
+          this.master.addCrossPatch(source.instrument, source.id, dest.instrument, dest.id);
+          if (ui.network && ui.network.connected) {
+            ui.network.broadcastPatchChange('add', source.instrument, source.id, dest.instrument, dest.id);
+          }
+        }
+        this.activePatchStart = null;
+      } else {
+        // Same type - restart with new point
+        this.activePatchStart = pp;
+      }
+      return;
     }
     // Clicked empty space - cancel selection
     this.activePatchStart = null;

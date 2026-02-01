@@ -16,6 +16,14 @@ class MoogNetwork {
     // Throttled param batching
     this._pendingParams = {};
     this._paramFlushScheduled = false;
+
+    // Tab tracking
+    this.onPeerTabChange = null; // (peerId, tabId) => {}
+
+    // Talkback audio
+    this._localStream = null;
+    this._mediaConnections = []; // PeerJS media calls
+    this._remoteAudios = [];
   }
 
   _generateRoomCode() {
@@ -39,6 +47,7 @@ class MoogNetwork {
       this.peer.on('open', (id) => {
         this.myId = id;
         this.connected = true;
+        this._setupMediaHandling();
         this._updateStatus();
         resolve(this.roomId);
       });
@@ -67,6 +76,7 @@ class MoogNetwork {
 
       this.peer.on('open', (id) => {
         this.myId = id;
+        this._setupMediaHandling();
         const hostId = `moogstudio-${this.roomId}-host`;
         const conn = this.peer.connect(hostId, {
           reliable: true,
@@ -112,6 +122,7 @@ class MoogNetwork {
     conn.on('close', () => {
       this.connections = this.connections.filter(c => c !== conn);
       this.peers = this.peers.filter(p => p !== conn.peer);
+      if (this.onPeerTabChange) this.onPeerTabChange(conn.peer, null);
       this._updateStatus();
     });
   }
@@ -176,6 +187,13 @@ class MoogNetwork {
         if (this.isHost) this._broadcastToAll(data, data.fromPeer);
         break;
 
+      case 'tabChange':
+        if (this.onPeerTabChange) {
+          this.onPeerTabChange(data.fromPeer, data.tabId);
+        }
+        if (this.isHost) this._broadcastToAll(data, data.fromPeer);
+        break;
+
       case 'error':
         alert(data.message);
         break;
@@ -222,6 +240,61 @@ class MoogNetwork {
     for (const conn of this.connections) {
       if (conn.open) conn.send(msg);
     }
+  }
+
+  broadcastTab(tabId) {
+    const msg = { type: 'tabChange', tabId, fromPeer: this.myId };
+    for (const conn of this.connections) {
+      if (conn.open) conn.send(msg);
+    }
+  }
+
+  // === Talkback Audio ===
+
+  async startTalkback() {
+    if (this._localStream) return; // already active
+    try {
+      this._localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      // Call all connected peers with audio
+      for (const conn of this.connections) {
+        if (conn.open) {
+          const call = this.peer.call(conn.peer, this._localStream);
+          this._mediaConnections.push(call);
+        }
+      }
+    } catch (e) {
+      console.error('Talkback mic access denied:', e);
+      this._localStream = null;
+    }
+  }
+
+  stopTalkback() {
+    if (this._localStream) {
+      this._localStream.getTracks().forEach(t => t.stop());
+      this._localStream = null;
+    }
+    for (const mc of this._mediaConnections) {
+      mc.close();
+    }
+    this._mediaConnections = [];
+  }
+
+  _setupMediaHandling() {
+    if (!this.peer) return;
+    this.peer.on('call', (call) => {
+      // Answer incoming calls with no stream (receive only)
+      call.answer();
+      call.on('stream', (remoteStream) => {
+        // Play remote audio
+        const audio = new Audio();
+        audio.srcObject = remoteStream;
+        audio.play().catch(() => {});
+        this._remoteAudios.push(audio);
+      });
+      call.on('close', () => {
+        // Clean up
+      });
+    });
   }
 
   _broadcastToAll(data, excludePeer) {

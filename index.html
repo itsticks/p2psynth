@@ -125,6 +125,7 @@
   <script src="js/ui-edge.js"></script>
   <script src="js/ui-spice.js"></script>
   <script src="js/ui-patchbay.js"></script>
+  <script src="js/ui-talkback.js"></script>
   <script src="js/ui.js"></script>
 
   <!-- Network -->
@@ -166,11 +167,13 @@
     const edgePanel = new EdgePanel(edge, master);
     const spicePanel = new SpicePanel(spice, master);
     const patchPanel = new PatchBayPanel(master);
+    const talkbackPanel = new TalkbackPanel(network);
 
     ui.registerPanel('crave', cravePanel);
     ui.registerPanel('edge', edgePanel);
     ui.registerPanel('spice', spicePanel);
     ui.registerPanel('patchbay', patchPanel);
+    ui.registerPanel('talkback', talkbackPanel);
 
     // Build initial layouts
     const s = ui.getScale();
@@ -179,6 +182,7 @@
     edgePanel.buildLayout(area, s);
     spicePanel.buildLayout(area, s);
     patchPanel.buildLayout(area, s);
+    talkbackPanel.buildLayout(area, s);
 
     // Sequencer step callbacks
     crave.onSequencerStep = (id, step) => { ui.seqSteps.crave = step; };
@@ -189,6 +193,15 @@
     master.onParamChange = (instrument, path, value) => {
       if (network.connected) {
         network.broadcastParam(instrument, path, value);
+      }
+    };
+
+    // Peer tab changes -> update UI indicators
+    network.onPeerTabChange = (peerId, tabId) => {
+      if (tabId === null) {
+        delete ui.peerTabs[peerId];
+      } else {
+        ui.peerTabs[peerId] = tabId;
       }
     };
 

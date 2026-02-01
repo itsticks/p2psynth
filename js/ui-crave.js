@@ -15,60 +15,63 @@ class CravePanel {
   buildLayout(area, s) {
     this.controls = [];
     const { w, h } = area;
-    const pad = 12 * s;
+    const pad = 10 * s;
     this.pad = pad;
     const cx = w / 2;
-    const knobR = 24 * s;
-    const knobSmR = 18 * s;
-    const rowH = 72 * s;
+    const knobR = 28 * s;
+    const knobSmR = 22 * s;
+    const rowH = 62 * s;
+    // Use more width: spread controls across ~80% of canvas
+    const sp3 = Math.min(110 * s, (w - pad * 2) / 3.2); // spacing for 3-item rows
+    const sp4 = Math.min(80 * s, (w - pad * 2) / 4.5);  // spacing for 4-item rows
 
-    let y = 50 * s; // below waveform
+    let y = 46 * s; // below waveform
 
     // Row 1: VCO - FREQ, PW, MIX
-    this._knob('vco.frequency', 'FREQ', cx - 90 * s, y, knobR, 20, 2000, 'log');
+    this._knob('vco.frequency', 'FREQ', cx - sp3, y, knobR, 20, 2000, 'log');
     this._knob('vco.pulseWidth', 'PULSE W', cx, y, knobR, 0.01, 0.99);
-    this._knob('vco.mix', 'VCO/NOISE', cx + 90 * s, y, knobR, 0, 1);
+    this._knob('vco.mix', 'VCO/NOISE', cx + sp3, y, knobR, 0, 1);
 
     y += rowH;
     // Row 2: WAVE switch, FILTER TYPE switch, GLIDE
-    this._switch('vco.waveform', 'WAVE', cx - 80 * s, y, ['SAW', 'SQR'], 55 * s);
-    this._switch('vcf.type', 'FILTER', cx, y, ['LP', 'HP'], 45 * s);
-    this._knob('glide', 'GLIDE', cx + 85 * s, y, knobSmR, 0, 1);
+    this._switch('vco.waveform', 'WAVE', cx - sp3 * 0.85, y, ['SAW', 'SQR'], 55 * s);
+    this._switch('vcf.type', 'FILTER', cx, y, ['LP', 'HP'], 50 * s);
+    this._knob('glide', 'GLIDE', cx + sp3 * 0.85, y, knobSmR, 0, 1);
 
     y += rowH;
     // Row 3: CUTOFF, RESO, ENV AMT
-    this._knob('vcf.cutoff', 'CUTOFF', cx - 90 * s, y, knobR, 20, 18000, 'log');
+    this._knob('vcf.cutoff', 'CUTOFF', cx - sp3, y, knobR, 20, 18000, 'log');
     this._knob('vcf.resonance', 'RESO', cx, y, knobR, 0, 1);
-    this._knob('vcf.envAmount', 'ENV AMT', cx + 90 * s, y, knobSmR, 0, 1);
+    this._knob('vcf.envAmount', 'ENV AMT', cx + sp3, y, knobSmR, 0, 1);
 
     y += rowH;
     // Row 4: ADSR
-    this._knob('env.attack', 'ATK', cx - 105 * s, y, knobSmR, 0.001, 2, 'log');
-    this._knob('env.decay', 'DEC', cx - 35 * s, y, knobSmR, 0.01, 3, 'log');
-    this._knob('env.sustain', 'SUS', cx + 35 * s, y, knobSmR, 0, 1);
-    this._switch('env.sustainOn', 'SUS ON', cx + 105 * s, y, ['OFF', 'ON'], 45 * s);
+    this._knob('env.attack', 'ATK', cx - sp4 * 1.5, y, knobSmR, 0.001, 2, 'log');
+    this._knob('env.decay', 'DEC', cx - sp4 * 0.5, y, knobSmR, 0.01, 3, 'log');
+    this._knob('env.sustain', 'SUS', cx + sp4 * 0.5, y, knobSmR, 0, 1);
+    this._switch('env.sustainOn', 'SUS ON', cx + sp4 * 1.5, y, ['OFF', 'ON'], 48 * s);
 
     y += rowH;
     // Row 5: LFO
-    this._knob('lfo.rate', 'LFO RATE', cx - 100 * s, y, knobSmR, 0.1, 30, 'log');
-    this._knob('lfo.amount', 'LFO AMT', cx - 30 * s, y, knobSmR, 0, 1);
-    this._switch('lfo.waveform', 'LFO', cx + 45 * s, y, ['TRI', 'SQR'], 45 * s);
-    this._switch('lfo.destination', 'DEST', cx + 110 * s, y, ['VCO', 'VCF', 'PW'], 60 * s);
+    this._knob('lfo.rate', 'LFO RATE', cx - sp4 * 1.5, y, knobSmR, 0.1, 30, 'log');
+    this._knob('lfo.amount', 'LFO AMT', cx - sp4 * 0.5, y, knobSmR, 0, 1);
+    this._switch('lfo.waveform', 'LFO', cx + sp4 * 0.5, y, ['TRI', 'SQR'], 48 * s);
+    this._switch('lfo.destination', 'DEST', cx + sp4 * 1.5, y, ['VCO', 'VCF', 'PW'], 62 * s);
 
     y += rowH;
     // Row 6: VCA + Volume + Seq controls
-    this._switch('vca.mode', 'VCA', cx - 100 * s, y, ['ENV', 'ON'], 45 * s);
-    this._knob('vca.level', 'VOLUME', cx - 35 * s, y, knobSmR, 0, 1);
-    this._knob('seq.tempo', 'TEMPO', cx + 40 * s, y, knobSmR, 40, 300);
-    this._knob('seq.gateLength', 'GATE', cx + 100 * s, y, knobSmR * 0.8, 0.05, 0.95);
+    this._switch('vca.mode', 'VCA', cx - sp4 * 1.5, y, ['ENV', 'ON'], 48 * s);
+    this._knob('vca.level', 'VOLUME', cx - sp4 * 0.5, y, knobSmR, 0, 1);
+    this._knob('seq.tempo', 'TEMPO', cx + sp4 * 0.5, y, knobSmR, 40, 300);
+    this._knob('seq.gateLength', 'GATE', cx + sp4 * 1.5, y, knobSmR * 0.85, 0.05, 0.95);
 
-    y += rowH * 0.7;
+    y += rowH * 0.65;
     // Sequencer run button
-    this._button('seq.running', 'RUN/STOP', cx - 90 * s, y);
+    this._button('seq.running', 'RUN/STOP', cx - sp3 * 0.8, y);
 
     // 16 sequencer steps in 2 rows of 8
-    const stepSize = Math.min(22 * s, (w - pad * 4) / 8.5);
-    const stepsStartX = cx - stepSize * 3.5;
+    const stepSize = Math.min(24 * s, (w - pad * 4) / 8.5);
+    const stepsStartX = cx - stepSize * 3;
     for (let row = 0; row < 2; row++) {
       for (let i = 0; i < 8; i++) {
         const stepIdx = row * 8 + i;
@@ -76,18 +79,18 @@ class CravePanel {
           type: 'seqStep',
           path: `seq.steps.${stepIdx}`,
           index: stepIdx,
-          x: stepsStartX + i * stepSize,
-          y: y + row * (stepSize + 4 * s),
-          size: stepSize * 0.85,
+          x: stepsStartX + i * (stepSize * 0.9),
+          y: y + row * (stepSize + 3 * s),
+          size: stepSize * 0.82,
           note: this.synth.state.seq.steps[stepIdx],
         });
       }
     }
 
     // Keyboard
-    y += rowH + stepSize;
-    this.kbY = Math.min(y, area.h - 60 * s);
-    this.kbH = Math.min(55 * s, area.h - this.kbY - 5 * s);
+    y += rowH * 0.7 + stepSize;
+    this.kbY = Math.min(y, area.h - 55 * s);
+    this.kbH = Math.max(45 * s, Math.min(60 * s, area.h - this.kbY - 4 * s));
   }
 
   _knob(path, label, x, y, r, min, max, scale) {

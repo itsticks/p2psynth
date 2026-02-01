@@ -12,55 +12,58 @@ class EdgePanel {
     this.controls = [];
     const { w, h } = area;
     const cx = w / 2;
-    const knobR = 22 * s;
-    const knobSmR = 17 * s;
-    const rowH = 68 * s;
+    const knobR = 26 * s;
+    const knobSmR = 21 * s;
+    const rowH = 60 * s;
+    const sp3 = Math.min(105 * s, (w - 20 * s) / 3.2);
+    const sp4 = Math.min(78 * s, (w - 20 * s) / 4.5);
+    const sp5 = Math.min(60 * s, (w - 20 * s) / 5.5);
 
-    let y = 50 * s;
+    let y = 46 * s;
 
     // Row 1: VCO1
     this._label('VCO 1');
-    this._knob('vco1.frequency', 'FREQ 1', cx - 95 * s, y, knobR, 20, 5000, 'log');
-    this._switch('vco1.shape', 'SHAPE', cx - 20 * s, y, ['SQR', 'TRI'], 50 * s);
-    this._knob('vco1.level', 'LEVEL 1', cx + 65 * s, y, knobSmR, 0, 1);
+    this._knob('vco1.frequency', 'FREQ 1', cx - sp3, y, knobR, 20, 5000, 'log');
+    this._switch('vco1.shape', 'SHAPE', cx, y, ['SQR', 'TRI'], 52 * s);
+    this._knob('vco1.level', 'LEVEL 1', cx + sp3, y, knobSmR, 0, 1);
 
     y += rowH;
     // Row 2: VCO2
-    this._knob('vco2.frequency', 'FREQ 2', cx - 95 * s, y, knobR, 20, 5000, 'log');
-    this._switch('vco2.shape', 'SHAPE', cx - 20 * s, y, ['SQR', 'TRI'], 50 * s);
-    this._knob('vco2.level', 'LEVEL 2', cx + 65 * s, y, knobSmR, 0, 1);
+    this._knob('vco2.frequency', 'FREQ 2', cx - sp3, y, knobR, 20, 5000, 'log');
+    this._switch('vco2.shape', 'SHAPE', cx, y, ['SQR', 'TRI'], 52 * s);
+    this._knob('vco2.level', 'LEVEL 2', cx + sp3, y, knobSmR, 0, 1);
 
     y += rowH;
     // Row 3: FM, Sync, Noise
-    this._knob('fm.amount', 'FM AMT', cx - 100 * s, y, knobSmR, 0, 1);
-    this._switch('vco2.hardSync', 'SYNC', cx - 30 * s, y, ['OFF', 'ON'], 45 * s);
-    this._switch('noise.type', 'NOISE', cx + 40 * s, y, ['WHT', 'PNK'], 45 * s);
-    this._knob('noise.level', 'N.LVL', cx + 105 * s, y, knobSmR, 0, 1);
+    this._knob('fm.amount', 'FM AMT', cx - sp4 * 1.5, y, knobSmR, 0, 1);
+    this._switch('vco2.hardSync', 'SYNC', cx - sp4 * 0.5, y, ['OFF', 'ON'], 48 * s);
+    this._switch('noise.type', 'NOISE', cx + sp4 * 0.5, y, ['WHT', 'PNK'], 48 * s);
+    this._knob('noise.level', 'N.LVL', cx + sp4 * 1.5, y, knobSmR, 0, 1);
 
     y += rowH;
     // Row 4: Filter
-    this._knob('vcf.cutoff', 'CUTOFF', cx - 90 * s, y, knobR, 20, 18000, 'log');
+    this._knob('vcf.cutoff', 'CUTOFF', cx - sp3, y, knobR, 20, 18000, 'log');
     this._knob('vcf.resonance', 'RESO', cx, y, knobR, 0, 1);
-    this._switch('vcf.type', 'FILT', cx + 85 * s, y, ['LP', 'HP'], 40 * s);
+    this._switch('vcf.type', 'FILT', cx + sp3, y, ['LP', 'HP'], 45 * s);
 
     y += rowH;
     // Row 5: Envelopes
-    this._knob('pitchEg.decay', 'P.DEC', cx - 110 * s, y, knobSmR, 0.005, 2, 'log');
-    this._knob('pitchEg.amount', 'P.AMT', cx - 55 * s, y, knobSmR, 0, 1);
+    this._knob('pitchEg.decay', 'P.DEC', cx - sp5 * 2, y, knobSmR, 0.005, 2, 'log');
+    this._knob('pitchEg.amount', 'P.AMT', cx - sp5, y, knobSmR, 0, 1);
     this._knob('filterEg.decay', 'F.DEC', cx, y, knobSmR, 0.01, 3, 'log');
-    this._knob('filterEg.amount', 'F.AMT', cx + 55 * s, y, knobSmR, 0, 1);
-    this._knob('vcaEg.decay', 'V.DEC', cx + 110 * s, y, knobSmR, 0.01, 5, 'log');
+    this._knob('filterEg.amount', 'F.AMT', cx + sp5, y, knobSmR, 0, 1);
+    this._knob('vcaEg.decay', 'V.DEC', cx + sp5 * 2, y, knobSmR, 0.01, 5, 'log');
 
     y += rowH * 0.8;
     // Row 6: VCA fast/slow, Volume, Tempo, Run
-    this._switch('vcaEg.fast', 'ATTACK', cx - 100 * s, y, ['SLOW', 'FAST'], 50 * s);
-    this._knob('volume', 'VOLUME', cx - 35 * s, y, knobSmR, 0, 1);
-    this._knob('seq.tempo', 'TEMPO', cx + 35 * s, y, knobSmR, 40, 500);
-    this._button('seq.running', 'RUN', cx + 100 * s, y);
+    this._switch('vcaEg.fast', 'ATTACK', cx - sp4 * 1.5, y, ['SLOW', 'FAST'], 52 * s);
+    this._knob('volume', 'VOLUME', cx - sp4 * 0.5, y, knobSmR, 0, 1);
+    this._knob('seq.tempo', 'TEMPO', cx + sp4 * 0.5, y, knobSmR, 40, 500);
+    this._button('seq.running', 'RUN', cx + sp4 * 1.5, y);
 
-    y += rowH * 0.85;
+    y += rowH * 0.8;
     // Sequencer: 8 pitch steps
-    const stepSize = Math.min(26 * s, (w - 30 * s) / 8.5);
+    const stepSize = Math.min(28 * s, (w - 30 * s) / 8.5);
     const stepsX = cx - stepSize * 3.5;
     for (let i = 0; i < 8; i++) {
       this.controls.push({
@@ -76,8 +79,8 @@ class EdgePanel {
     }
 
     // 8 velocity bars below
-    y += stepSize + 6 * s;
-    const barH = 35 * s;
+    y += stepSize + 5 * s;
+    const barH = 32 * s;
     const barW = stepSize * 0.6;
     for (let i = 0; i < 8; i++) {
       this.controls.push({

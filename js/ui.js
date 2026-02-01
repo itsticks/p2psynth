@@ -14,13 +14,15 @@ class SynthUI {
       { id: 'edge', label: 'EDGE', color: '#4af0ff' },
       { id: 'spice', label: 'SPICE', color: '#b84aff' },
       { id: 'patchbay', label: 'PATCH', color: '#d4a44c' },
+      { id: 'talkback', label: 'TALK', color: '#44ff88' },
     ];
 
-    this.tabBarH = 52 * this.dpr;
+    this.tabBarH = 56 * this.dpr;
     this.panels = {};
     this.dragging = null;
     this.mousePos = { x: 0, y: 0 };
     this.showHelp = true;
+    this.peerTabs = {}; // peerId -> tabId
 
     // Sequencer step tracking per instrument
     this.seqSteps = { crave: -1, edge: -1, spice: { seq1Step: 0, seq2Step: 0, tick: 0 } };
@@ -44,7 +46,7 @@ class SynthUI {
 
   getScale() {
     const area = this.getContentArea();
-    return Math.min(area.w / 400, area.h / 700);
+    return Math.min(area.w / 310, area.h / 580);
   }
 
   // === Events ===
@@ -99,6 +101,10 @@ class SynthUI {
       const tabIdx = Math.floor(x / tabW);
       if (tabIdx >= 0 && tabIdx < this.tabs.length) {
         this.activeTab = this.tabs[tabIdx].id;
+        // Broadcast tab change to peers
+        if (this.network && this.network.connected) {
+          this.network.broadcastTab(this.activeTab);
+        }
         // Rebuild active panel layout
         const panel = this.panels[this.activeTab];
         if (panel && panel.buildLayout) panel.buildLayout(this.getContentArea(), this.getScale());
@@ -241,6 +247,17 @@ class SynthUI {
       ctx.font = `bold ${10 * s}px 'Courier New', monospace`;
       ctx.textAlign = 'center';
       ctx.fillText(tab.label, tx + tabW / 2, tabY + 35 * s);
+
+      // Peer indicators - show colored dots for peers on this tab
+      const peersOnTab = Object.values(this.peerTabs).filter(t => t === tab.id);
+      if (peersOnTab.length > 0) {
+        for (let p = 0; p < peersOnTab.length; p++) {
+          ctx.beginPath();
+          ctx.arc(tx + tabW / 2 - 5 * s + p * 8 * s, tabY + 44 * s, 2.5 * s, 0, Math.PI * 2);
+          ctx.fillStyle = '#44ff88';
+          ctx.fill();
+        }
+      }
     }
   }
 
@@ -252,7 +269,7 @@ class SynthUI {
     if (this.network && this.network.connected) {
       ctx.fillStyle = '#44ff88';
       ctx.font = `${9 * s}px 'Courier New', monospace`;
-      ctx.fillText(`${this.network.peers.length + 1} ONLINE`, x, 14 * s);
+      ctx.fillText(`${this.network.connections.length + 1} ONLINE`, x, 14 * s);
       ctx.fillStyle = '#888888';
       ctx.fillText(`ROOM: ${this.network.roomId}`, x, 26 * s);
     } else {
