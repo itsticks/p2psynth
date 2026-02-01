@@ -3,15 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Moog Mother P2P Synth</title>
+  <title>P2P Sound Studio - Crave / Edge / Spice</title>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       background: #0a0a0a;
       overflow: hidden;
@@ -22,372 +17,244 @@
       -webkit-user-select: none;
       user-select: none;
     }
+    #synth-canvas { display: block; width: 100vw; height: 100vh; }
 
-    #app {
-      width: 100vw;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    #synth-canvas {
-      flex: 1;
-      display: block;
-      cursor: pointer;
-    }
-
-    /* Connection overlay */
     #connect-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.92);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.94);
+      display: flex; align-items: center; justify-content: center;
       z-index: 100;
     }
+    #connect-overlay.hidden { display: none; }
 
-    #connect-overlay.hidden {
-      display: none;
+    .panel {
+      background: #1a1a1a; border: 2px solid #d4a44c; border-radius: 12px;
+      padding: 28px; max-width: 400px; width: 92%; text-align: center;
     }
-
-    .connect-panel {
-      background: #1a1a1a;
-      border: 2px solid #d4a44c;
-      border-radius: 12px;
-      padding: 30px;
-      max-width: 420px;
-      width: 90%;
-      text-align: center;
+    .panel h1 { color: #d4a44c; font-size: 22px; margin-bottom: 4px; letter-spacing: 3px; }
+    .panel .sub { color: #777; font-size: 11px; margin-bottom: 20px; }
+    .panel input {
+      background: #0a0a0a; border: 1px solid #444; color: #fff;
+      padding: 10px 14px; font-family: 'Courier New', monospace; font-size: 16px;
+      border-radius: 6px; width: 100%; margin-bottom: 10px; text-align: center; letter-spacing: 2px;
     }
+    .panel input:focus { outline: none; border-color: #d4a44c; }
+    .panel input::placeholder { color: #555; letter-spacing: 0; }
 
-    .connect-panel h1 {
-      color: #d4a44c;
-      font-size: 24px;
-      margin-bottom: 5px;
-      letter-spacing: 3px;
-    }
-
-    .connect-panel .subtitle {
-      color: #888;
-      font-size: 12px;
-      margin-bottom: 25px;
-    }
-
-    .connect-panel input {
-      background: #0a0a0a;
-      border: 1px solid #444;
-      color: #fff;
-      padding: 10px 15px;
-      font-family: 'Courier New', monospace;
-      font-size: 16px;
-      border-radius: 6px;
-      width: 100%;
-      margin-bottom: 12px;
-      text-align: center;
-      letter-spacing: 2px;
-    }
-
-    .connect-panel input:focus {
-      outline: none;
-      border-color: #d4a44c;
-    }
-
-    .connect-panel input::placeholder {
-      color: #555;
-      letter-spacing: 0;
-    }
-
-    .btn-row {
-      display: flex;
-      gap: 10px;
-      margin-top: 10px;
-    }
-
+    .btn-row { display: flex; gap: 10px; margin-top: 10px; }
     .btn {
-      flex: 1;
-      padding: 12px 20px;
-      font-family: 'Courier New', monospace;
-      font-size: 14px;
-      font-weight: bold;
-      border: 2px solid;
-      border-radius: 8px;
-      cursor: pointer;
-      letter-spacing: 1px;
-      transition: all 0.15s;
+      flex: 1; padding: 12px 16px; font-family: 'Courier New', monospace;
+      font-size: 13px; font-weight: bold; border: 2px solid; border-radius: 8px;
+      cursor: pointer; letter-spacing: 1px; transition: transform 0.1s;
     }
+    .btn:active { transform: scale(0.97); }
+    .btn-gold { background: #d4a44c; border-color: #d4a44c; color: #0a0a0a; }
+    .btn-blue { background: transparent; border-color: #4af0ff; color: #4af0ff; }
+    .btn-dim { background: transparent; border-color: #555; color: #888; margin-top: 12px; width: 100%; }
 
-    .btn:active {
-      transform: scale(0.97);
-    }
-
-    .btn-create {
-      background: #d4a44c;
-      border-color: #d4a44c;
-      color: #0a0a0a;
-    }
-
-    .btn-create:hover {
-      background: #e4b45c;
-    }
-
-    .btn-join {
-      background: transparent;
-      border-color: #4af0ff;
-      color: #4af0ff;
-    }
-
-    .btn-join:hover {
-      background: #4af0ff22;
-    }
-
-    .btn-solo {
-      background: transparent;
-      border-color: #666;
-      color: #888;
-      margin-top: 15px;
-      width: 100%;
-    }
-
-    .btn-solo:hover {
-      border-color: #999;
-      color: #bbb;
-    }
-
-    .room-code-display {
-      font-size: 36px;
-      color: #d4a44c;
-      letter-spacing: 8px;
-      margin: 15px 0;
-      font-weight: bold;
-    }
-
-    .status-msg {
-      color: #888;
-      font-size: 12px;
-      margin-top: 10px;
-    }
-
-    .section-legend {
-      display: flex;
-      justify-content: center;
-      gap: 15px;
-      margin-top: 15px;
-      font-size: 11px;
-    }
-
-    .section-legend span {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    .section-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      display: inline-block;
-    }
-
-    .error-msg {
-      color: #ff4444;
-      font-size: 12px;
-      margin-top: 8px;
-    }
-
-    /* Loading spinner */
+    .room-code { font-size: 34px; color: #d4a44c; letter-spacing: 8px; margin: 12px 0; font-weight: bold; }
+    .status { color: #777; font-size: 11px; margin-top: 8px; }
+    .error { color: #ff4444; font-size: 11px; margin-top: 6px; }
     .spinner {
-      display: inline-block;
-      width: 20px;
-      height: 20px;
-      border: 2px solid #d4a44c44;
-      border-top-color: #d4a44c;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin-right: 8px;
-      vertical-align: middle;
+      display: inline-block; width: 16px; height: 16px;
+      border: 2px solid #d4a44c44; border-top-color: #d4a44c;
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+      margin-right: 6px; vertical-align: middle;
     }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    .instruments {
+      display: flex; justify-content: center; gap: 12px; margin-top: 14px; font-size: 10px;
     }
+    .instruments span { display: flex; align-items: center; gap: 4px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
   </style>
 </head>
 <body>
-  <div id="app">
-    <canvas id="synth-canvas"></canvas>
-  </div>
+  <canvas id="synth-canvas"></canvas>
 
-  <!-- Connection Overlay -->
   <div id="connect-overlay">
-    <div class="connect-panel" id="panel-menu">
-      <h1>MOOG MOTHER</h1>
-      <div class="subtitle">PEER-TO-PEER SYNTHESIZER</div>
-
-      <input type="text" id="player-name" placeholder="Your name" maxlength="12" value="">
-
+    <div class="panel" id="p-menu">
+      <h1>SOUND STUDIO</h1>
+      <div class="sub">P2P SYNTHESIZER TRIO</div>
+      <input type="text" id="player-name" placeholder="Your name" maxlength="12">
       <div class="btn-row">
-        <button class="btn btn-create" onclick="doCreateRoom()">CREATE ROOM</button>
-        <button class="btn btn-join" onclick="showJoinPanel()">JOIN ROOM</button>
+        <button class="btn btn-gold" onclick="doCreate()">CREATE ROOM</button>
+        <button class="btn btn-blue" onclick="showJoin()">JOIN ROOM</button>
       </div>
-
-      <button class="btn btn-solo" onclick="startSolo()">PLAY SOLO</button>
-
-      <div class="section-legend">
-        <span><span class="section-dot" style="background:#ff6b4a"></span> OSCILLATOR</span>
-        <span><span class="section-dot" style="background:#4af0ff"></span> FILTER</span>
-        <span><span class="section-dot" style="background:#b84aff"></span> SEQ/MOD</span>
+      <button class="btn btn-dim" onclick="startSolo()">PLAY SOLO</button>
+      <div class="instruments">
+        <span><span class="dot" style="background:#ff6b4a"></span> CRAVE</span>
+        <span><span class="dot" style="background:#4af0ff"></span> EDGE</span>
+        <span><span class="dot" style="background:#b84aff"></span> SPICE</span>
       </div>
     </div>
 
-    <div class="connect-panel" id="panel-join" style="display:none">
+    <div class="panel" id="p-join" style="display:none">
       <h1>JOIN ROOM</h1>
-      <div class="subtitle">Enter the 4-letter room code</div>
-
-      <input type="text" id="room-code-input" placeholder="ABCD" maxlength="4"
-             style="text-transform:uppercase; font-size:28px; letter-spacing:8px;">
-
+      <div class="sub">Enter the 4-letter code</div>
+      <input type="text" id="room-input" placeholder="ABCD" maxlength="4"
+             style="text-transform:uppercase; font-size:26px; letter-spacing:8px;">
       <div class="btn-row">
-        <button class="btn btn-solo" onclick="showMenuPanel()" style="margin-top:0">BACK</button>
-        <button class="btn btn-join" onclick="doJoinRoom()">CONNECT</button>
+        <button class="btn btn-dim" onclick="showMenu()" style="margin-top:0">BACK</button>
+        <button class="btn btn-blue" onclick="doJoin()">CONNECT</button>
       </div>
-
-      <div class="error-msg" id="join-error"></div>
+      <div class="error" id="join-err"></div>
     </div>
 
-    <div class="connect-panel" id="panel-waiting" style="display:none">
-      <h1>ROOM CREATED</h1>
-      <div class="subtitle">Share this code with your friends</div>
-
-      <div class="room-code-display" id="room-code-display">----</div>
-
-      <div class="status-msg" id="waiting-status">
-        <span class="spinner"></span> Waiting for players...
-      </div>
-
-      <div class="section-legend" id="player-list"></div>
-
-      <button class="btn btn-create" onclick="startJam()" style="margin-top:20px">START JAMMING</button>
-      <button class="btn btn-solo" onclick="startSolo()" style="margin-top:8px">PLAY SOLO INSTEAD</button>
+    <div class="panel" id="p-wait" style="display:none">
+      <h1>ROOM READY</h1>
+      <div class="sub">Share this code with your friends</div>
+      <div class="room-code" id="room-display">----</div>
+      <div class="status" id="wait-status"><span class="spinner"></span>Waiting for players...</div>
+      <button class="btn btn-gold" onclick="startJam()" style="margin-top:16px">START JAMMING</button>
+      <button class="btn btn-dim" onclick="startSolo()">PLAY SOLO INSTEAD</button>
     </div>
   </div>
 
-  <script src="js/synth.js"></script>
-  <script src="js/ui.js"></script>
-  <script src="js/network.js"></script>
-  <script>
-    // === Globals ===
-    let synth, ui, network;
-    let animationId;
+  <!-- Synth engines -->
+  <script src="js/synth-base.js"></script>
+  <script src="js/synth-crave.js"></script>
+  <script src="js/synth-edge.js"></script>
+  <script src="js/synth-spice.js"></script>
+  <script src="js/synth-master.js"></script>
 
-    // === Canvas Setup ===
+  <!-- UI -->
+  <script src="js/ui-controls.js"></script>
+  <script src="js/ui-crave.js"></script>
+  <script src="js/ui-edge.js"></script>
+  <script src="js/ui-spice.js"></script>
+  <script src="js/ui-patchbay.js"></script>
+  <script src="js/ui.js"></script>
+
+  <!-- Network -->
+  <script src="js/network.js"></script>
+
+  <script>
+    // === Setup ===
     const canvas = document.getElementById('synth-canvas');
+    const dpr = window.devicePixelRatio || 1;
 
     function resizeCanvas() {
-      const dpr = window.devicePixelRatio || 1;
       canvas.width = window.innerWidth * dpr;
       canvas.height = window.innerHeight * dpr;
       canvas.style.width = window.innerWidth + 'px';
       canvas.style.height = window.innerHeight + 'px';
       if (ui) ui.resize();
     }
-
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    // === Init Synth & UI ===
-    synth = new MoogSynth();
-    network = new MoogNetwork(synth, null);
-    ui = new MoogUI(canvas, synth, network);
-    network.ui = ui;
+    // Create synth engines
+    const crave = new SynthCrave();
+    const edge = new SynthEdge();
+    const spice = new SynthSpice();
+    const master = new SynthMaster();
+    master.registerInstrument(crave);
+    master.registerInstrument(edge);
+    master.registerInstrument(spice);
 
-    // Sequencer step callback for UI
-    synth.onSequencerStep = (step) => {
-      ui.sequencerStep = step;
+    // Create network
+    const network = new MoogNetwork(master);
+
+    // Create UI
+    const ui = new SynthUI(canvas, master, network);
+
+    // Create and register panels
+    const cravePanel = new CravePanel(crave, master);
+    const edgePanel = new EdgePanel(edge, master);
+    const spicePanel = new SpicePanel(spice, master);
+    const patchPanel = new PatchBayPanel(master);
+
+    ui.registerPanel('crave', cravePanel);
+    ui.registerPanel('edge', edgePanel);
+    ui.registerPanel('spice', spicePanel);
+    ui.registerPanel('patchbay', patchPanel);
+
+    // Build initial layouts
+    const s = ui.getScale();
+    const area = ui.getContentArea();
+    cravePanel.buildLayout(area, s);
+    edgePanel.buildLayout(area, s);
+    spicePanel.buildLayout(area, s);
+    patchPanel.buildLayout(area, s);
+
+    // Sequencer step callbacks
+    crave.onSequencerStep = (id, step) => { ui.seqSteps.crave = step; };
+    edge.onSequencerStep = (id, step) => { ui.seqSteps.edge = step; };
+    spice.onSequencerStep = (id, data) => { ui.seqSteps.spice = data; };
+
+    // Network param changes from synth engines -> broadcast
+    master.onParamChange = (instrument, path, value) => {
+      if (network.connected) {
+        network.broadcastParam(instrument, path, value);
+      }
     };
 
-    // === Render Loop ===
+    // Network state sync -> update UI
+    const origApplyParam = master.applyParam.bind(master);
+    master.applyParam = (instrument, path, value) => {
+      origApplyParam(instrument, path, value);
+      ui.syncFromState();
+    };
+    const origApplyFull = master.applyFullState.bind(master);
+    master.applyFullState = (state) => {
+      origApplyFull(state);
+      ui.syncFromState();
+    };
+
+    // Render loop
     function render() {
       ui.render();
-      animationId = requestAnimationFrame(render);
+      requestAnimationFrame(render);
     }
     render();
 
     // === Connection UI ===
     function showPanel(id) {
-      document.querySelectorAll('.connect-panel').forEach(p => p.style.display = 'none');
+      document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
       document.getElementById(id).style.display = 'block';
     }
+    function showMenu() { showPanel('p-menu'); }
+    function showJoin() { showPanel('p-join'); document.getElementById('room-input').focus(); }
 
-    function showJoinPanel() {
-      showPanel('panel-join');
-      document.getElementById('room-code-input').focus();
-    }
-
-    function showMenuPanel() {
-      showPanel('panel-menu');
-    }
-
-    async function doCreateRoom() {
+    async function doCreate() {
       const name = document.getElementById('player-name').value || 'Host';
       try {
-        const roomCode = await network.createRoom(name);
-        document.getElementById('room-code-display').textContent = roomCode;
-        showPanel('panel-waiting');
-
-        network.onStatusChange = (status) => {
-          const el = document.getElementById('waiting-status');
-          const count = status.peerCount + 1;
-          el.innerHTML = `<span class="spinner"></span> ${count}/3 players connected`;
+        const code = await network.createRoom(name);
+        document.getElementById('room-display').textContent = code;
+        showPanel('p-wait');
+        network.onStatusChange = (s) => {
+          document.getElementById('wait-status').innerHTML =
+            `<span class="spinner"></span>${s.peerCount + 1}/3 players connected`;
         };
-      } catch (err) {
-        alert('Failed to create room: ' + err.message);
-      }
+      } catch (e) { alert('Failed: ' + e.message); }
     }
 
-    async function doJoinRoom() {
-      const code = document.getElementById('room-code-input').value.toUpperCase();
+    async function doJoin() {
+      const code = document.getElementById('room-input').value.toUpperCase();
       const name = document.getElementById('player-name').value || 'Player';
-      const errorEl = document.getElementById('join-error');
-
-      if (code.length !== 4) {
-        errorEl.textContent = 'Enter a 4-letter room code';
-        return;
-      }
-
-      errorEl.innerHTML = '<span class="spinner"></span> Connecting...';
-
+      const err = document.getElementById('join-err');
+      if (code.length !== 4) { err.textContent = 'Enter a 4-letter code'; return; }
+      err.innerHTML = '<span class="spinner"></span>Connecting...';
       try {
         await network.joinRoom(code, name);
         document.getElementById('connect-overlay').classList.add('hidden');
-      } catch (err) {
-        errorEl.textContent = 'Could not connect: ' + err.message;
-      }
+      } catch (e) { err.textContent = 'Could not connect: ' + e.message; }
     }
 
-    function startJam() {
-      document.getElementById('connect-overlay').classList.add('hidden');
-    }
+    function startJam() { document.getElementById('connect-overlay').classList.add('hidden'); }
+    function startSolo() { document.getElementById('connect-overlay').classList.add('hidden'); }
 
-    function startSolo() {
-      document.getElementById('connect-overlay').classList.add('hidden');
-      ui.mySection = -1; // No section restriction in solo
-    }
-
-    // Enter key to join
-    document.getElementById('room-code-input').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') doJoinRoom();
+    document.getElementById('room-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') doJoin();
     });
 
-    // Generate a random name
-    const adjectives = ['Funky', 'Analog', 'Warm', 'Fizzy', 'Deep', 'Bright', 'Wild', 'Cosmic'];
-    const nouns = ['Synth', 'Bass', 'Wave', 'Pulse', 'Drone', 'Tone', 'Fuzz', 'Volt'];
-    const randomName = adjectives[Math.floor(Math.random() * adjectives.length)] +
-                       nouns[Math.floor(Math.random() * nouns.length)];
-    document.getElementById('player-name').value = randomName;
+    // Random name
+    const adj = ['Funky','Analog','Warm','Fizzy','Deep','Bright','Wild','Cosmic'];
+    const noun = ['Synth','Bass','Wave','Pulse','Drone','Tone','Fuzz','Volt'];
+    document.getElementById('player-name').value =
+      adj[Math.floor(Math.random()*adj.length)] + noun[Math.floor(Math.random()*noun.length)];
   </script>
 </body>
 </html>
