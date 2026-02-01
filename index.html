@@ -134,6 +134,7 @@
     // === Setup ===
     const canvas = document.getElementById('synth-canvas');
     const dpr = window.devicePixelRatio || 1;
+    let ui = null;
 
     function resizeCanvas() {
       canvas.width = window.innerWidth * dpr;
@@ -145,20 +146,20 @@
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    // Create synth engines
-    const crave = new SynthCrave();
-    const edge = new SynthEdge();
-    const spice = new SynthSpice();
-    const master = new SynthMaster();
+    // Create synth engines (var for global access from inline handlers)
+    var crave = new SynthCrave();
+    var edge = new SynthEdge();
+    var spice = new SynthSpice();
+    var master = new SynthMaster();
     master.registerInstrument(crave);
     master.registerInstrument(edge);
     master.registerInstrument(spice);
 
     // Create network
-    const network = new MoogNetwork(master);
+    var network = new MoogNetwork(master);
 
     // Create UI
-    const ui = new SynthUI(canvas, master, network);
+    ui = new SynthUI(canvas, master, network);
 
     // Create and register panels
     const cravePanel = new CravePanel(crave, master);
