@@ -109,6 +109,23 @@ class SynthCrave extends SynthBase {
     this.nodes.lfo.connect(this.nodes.lfoGain);
     this._applyLfoRouting();
 
+    // Patch output nodes: seq CV and gate (ConstantSourceNodes updated from JS)
+    this.nodes.seqCV = this.ctx.createConstantSource();
+    this.nodes.seqCV.offset.value = 0;
+    this.nodes.seqCV.start();
+    this.nodes.gateOut = this.ctx.createConstantSource();
+    this.nodes.gateOut.offset.value = 0;
+    this.nodes.gateOut.start();
+
+    // Patch input: tempo modulation
+    this.nodes.tempoIn = this.ctx.createGain();
+    this.nodes.tempoIn.gain.value = 0;
+    // Connect to a silent sink so the audio graph processes it
+    const tempoSink = this.ctx.createGain();
+    tempoSink.gain.value = 0;
+    this.nodes.tempoIn.connect(tempoSink);
+    tempoSink.connect(this.ctx.destination);
+
     // Start oscillators
     this.nodes.vco.start();
     this.nodes.lfo.start();
@@ -183,6 +200,8 @@ class SynthCrave extends SynthBase {
     this.noteOn = true;
     this.currentNote = midiNote;
     this.state.vco.frequency = freq;
+    if (this.nodes.gateOut) this.nodes.gateOut.offset.value = 1;
+    if (this.nodes.seqCV) this.nodes.seqCV.offset.value = freq;
   }
 
   releaseNote() {
@@ -329,7 +348,13 @@ class SynthCrave extends SynthBase {
       if (this.state.seq.gates[step]) {
         const note = this.state.seq.steps[step];
         this.triggerNote(note);
-        setTimeout(() => this.releaseNote(), stepTime * this.state.seq.gateLength);
+        // Update patch output nodes
+        if (this.nodes.seqCV) this.nodes.seqCV.offset.value = this.midiToFreq(note);
+        if (this.nodes.gateOut) this.nodes.gateOut.offset.value = 1;
+        setTimeout(() => {
+          this.releaseNote();
+          if (this.nodes.gateOut) this.nodes.gateOut.offset.value = 0;
+        }, stepTime * this.state.seq.gateLength);
       }
 
       if (this.onSequencerStep) this.onSequencerStep('crave', step);
@@ -368,9 +393,11 @@ class SynthCrave extends SynthBase {
     if (!this.initialized) return null;
     switch (id) {
       case 'lfo': return this.nodes.lfoGain;
-      case 'env': return this.nodes.vca; // envelope signal
+      case 'env': return this.nodes.vca;
       case 'noise': return this.nodes.noiseGain;
       case 'vco': return this.nodes.vcoGain;
+      case 'seq_cv': return this.nodes.seqCV;
+      case 'gate': return this.nodes.gateOut;
       default: return null;
     }
   }
@@ -383,6 +410,7 @@ class SynthCrave extends SynthBase {
       case 'vcf_res': return this.nodes.vcf[3].Q;
       case 'vca_level': return this.nodes.level.gain;
       case 'lfo_rate': return this.nodes.lfo.frequency;
+      case 'tempo': return this.nodes.tempoIn.gain;
       default: return null;
     }
   }

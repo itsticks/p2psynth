@@ -116,6 +116,25 @@ class SynthEdge extends SynthBase {
     this.nodes.vca.connect(this.nodes.level);
     this.nodes.level.connect(this.output);
 
+    // Patch output nodes: pitch EG, seq pitch CV, seq velocity CV
+    this.nodes.pitchEgOut = this.ctx.createConstantSource();
+    this.nodes.pitchEgOut.offset.value = 0;
+    this.nodes.pitchEgOut.start();
+    this.nodes.seqPitchCV = this.ctx.createConstantSource();
+    this.nodes.seqPitchCV.offset.value = 0;
+    this.nodes.seqPitchCV.start();
+    this.nodes.seqVelCV = this.ctx.createConstantSource();
+    this.nodes.seqVelCV.offset.value = 0;
+    this.nodes.seqVelCV.start();
+
+    // Patch input: tempo modulation
+    this.nodes.tempoIn = this.ctx.createGain();
+    this.nodes.tempoIn.gain.value = 0;
+    const tempoSink = this.ctx.createGain();
+    tempoSink.gain.value = 0;
+    this.nodes.tempoIn.connect(tempoSink);
+    tempoSink.connect(this.ctx.destination);
+
     // Start oscillators
     this.nodes.vco1.start();
     this.nodes.vco2.start();
@@ -177,6 +196,12 @@ class SynthEdge extends SynthBase {
     vca.linearRampToValueAtTime(velocity, now + attackTime);
     vca.exponentialRampToValueAtTime(0.001, now + attackTime + vcaDecay);
     vca.setValueAtTime(0, now + attackTime + vcaDecay + 0.001);
+
+    // Update pitch EG output for patch bay
+    if (this.nodes.pitchEgOut) {
+      const pitchAmt = (this.state.pitchEg.amount - 0.5) * 2;
+      this.nodes.pitchEgOut.offset.value = pitchAmt * 2000 * velocity;
+    }
   }
 
   // For compatibility - triggerNote uses the pitch to set VCO frequencies
@@ -298,6 +323,10 @@ class SynthEdge extends SynthBase {
 
       this.trigger(vel);
 
+      // Update patch output nodes
+      if (this.nodes.seqPitchCV) this.nodes.seqPitchCV.offset.value = this.midiToFreq(note);
+      if (this.nodes.seqVelCV) this.nodes.seqVelCV.offset.value = vel * 100;
+
       if (this.onSequencerStep) this.onSequencerStep('edge', step);
       this.sequencerStep++;
       this.sequencerInterval = setTimeout(tick, stepTime);
@@ -335,6 +364,9 @@ class SynthEdge extends SynthBase {
       case 'vco1': return this.nodes.vco1Gain;
       case 'vco2': return this.nodes.vco2Gain;
       case 'noise': return this.nodes.noiseGain;
+      case 'pitch_eg': return this.nodes.pitchEgOut;
+      case 'seq_pitch': return this.nodes.seqPitchCV;
+      case 'seq_vel': return this.nodes.seqVelCV;
       default: return null;
     }
   }
@@ -347,6 +379,7 @@ class SynthEdge extends SynthBase {
       case 'vcf_cutoff': return this.nodes.vcf[0].frequency;
       case 'vca_level': return this.nodes.level.gain;
       case 'fm_amt': return this.nodes.fmGain.gain;
+      case 'tempo': return this.nodes.tempoIn.gain;
       default: return null;
     }
   }

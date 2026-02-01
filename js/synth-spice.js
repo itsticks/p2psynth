@@ -126,6 +126,31 @@ class SynthSpice extends SynthBase {
     this.nodes.vca.connect(this.nodes.level);
     this.nodes.level.connect(this.output);
 
+    // Patch output nodes: filter EG, seq1 CV, seq2 CV
+    this.nodes.vcfEgOut = this.ctx.createConstantSource();
+    this.nodes.vcfEgOut.offset.value = 0;
+    this.nodes.vcfEgOut.start();
+    this.nodes.seq1CV = this.ctx.createConstantSource();
+    this.nodes.seq1CV.offset.value = 0;
+    this.nodes.seq1CV.start();
+    this.nodes.seq2CV = this.ctx.createConstantSource();
+    this.nodes.seq2CV.offset.value = 0;
+    this.nodes.seq2CV.start();
+
+    // Patch input: tempo modulation and sub CV
+    this.nodes.tempoIn = this.ctx.createGain();
+    this.nodes.tempoIn.gain.value = 0;
+    const tempoSink = this.ctx.createGain();
+    tempoSink.gain.value = 0;
+    this.nodes.tempoIn.connect(tempoSink);
+    tempoSink.connect(this.ctx.destination);
+    // Sub CV: modulates all sub-oscillator frequencies
+    this.nodes.subCVIn = this.ctx.createGain();
+    this.nodes.subCVIn.gain.value = 1;
+    for (let i = 0; i < 4; i++) {
+      this.nodes.subCVIn.connect(this.nodes.subs[i].frequency);
+    }
+
     // Start all oscillators
     this.nodes.vco1.start();
     this.nodes.vco2.start();
@@ -170,6 +195,11 @@ class SynthSpice extends SynthBase {
       f.frequency.setValueAtTime(baseCutoff, now);
       f.frequency.linearRampToValueAtTime(peakCutoff, now + vcfAtk);
       f.frequency.exponentialRampToValueAtTime(Math.max(baseCutoff, 20), now + vcfAtk + vcfDec);
+    }
+
+    // Update filter EG output for patch bay
+    if (this.nodes.vcfEgOut) {
+      this.nodes.vcfEgOut.offset.value = vcfAmt * (peakCutoff - baseCutoff);
     }
   }
 
@@ -309,6 +339,7 @@ class SynthSpice extends SynthBase {
               this.state.vco1.frequency = freq;
               if (this.initialized) {
                 this.nodes.vco1.frequency.setTargetAtTime(freq, this.ctx.currentTime, 0.005);
+                if (this.nodes.seq1CV) this.nodes.seq1CV.offset.value = freq;
               }
               this._updateSubFrequencies();
               this._triggerEnvelopes();
@@ -326,6 +357,7 @@ class SynthSpice extends SynthBase {
               this.state.vco2.frequency = freq;
               if (this.initialized) {
                 this.nodes.vco2.frequency.setTargetAtTime(freq, this.ctx.currentTime, 0.005);
+                if (this.nodes.seq2CV) this.nodes.seq2CV.offset.value = freq;
               }
               this._updateSubFrequencies();
               // Only trigger envelopes if seq1 didn't already
@@ -382,6 +414,9 @@ class SynthSpice extends SynthBase {
       case 'vco1': return this.nodes.vco1Gain;
       case 'vco2': return this.nodes.vco2Gain;
       case 'sub_mix': return this.nodes.mixer;
+      case 'vcf_eg': return this.nodes.vcfEgOut;
+      case 'seq1': return this.nodes.seq1CV;
+      case 'seq2': return this.nodes.seq2CV;
       default: return null;
     }
   }
@@ -393,6 +428,8 @@ class SynthSpice extends SynthBase {
       case 'vco2_freq': return this.nodes.vco2.frequency;
       case 'vcf_cutoff': return this.nodes.vcf[0].frequency;
       case 'vca_level': return this.nodes.level.gain;
+      case 'sub_cv': return this.nodes.subCVIn.gain;
+      case 'tempo': return this.nodes.tempoIn.gain;
       default: return null;
     }
   }
